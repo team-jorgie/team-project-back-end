@@ -23,10 +23,11 @@ const promiseRandomBytes = () => {
 }
 
 const file = process.argv[2]
+const filename = path.basename(file)
 const fileType = mime.lookup(file)
 const stream = fs.createReadStream(file)
 
-const filesplit = file.split('.')
+const filesplit = filename.split('.')
 
 promiseRandomBytes()
   .then((crypt) => {
