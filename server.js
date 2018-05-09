@@ -77,5 +77,8 @@ app.listen(port, () => {
   console.log('listening on port ' + port)
 })
 
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json())
+
 // needed for testing
 module.exports = app
