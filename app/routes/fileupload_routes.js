@@ -62,16 +62,16 @@ const multerUpload = multer({ dest: '/tmp/' })
 
 // CREATE
 // POST /fileuploads
-router.post('/fileuploads', multerUpload.single('fileupload[file]'), (req, res) => {
+router.post('/fileuploads', requireToken, multerUpload.single('fileupload[file]'), (req, res) => {
   // set owner of new fileupload to be current user
-  // req.body.fileupload.owner = req.user.id
+  req.body.fileupload.owner = req.user.id
   console.log('req.body is: ', req.body)
   console.log('req.file is: ', req.file)
   // FileUpload.create(req.body.fileupload)
   s3upload(req.file)
     .then((s3Response) => {
       return FileUpload.create({
-        owner: '5af45560a3fcd30e62ea0ca0', // user ID
+        owner: req.body.fileupload.owner,  //'5af45560a3fcd30e62ea0ca0', // user ID
         title: req.body.fileupload.title, // From input
         url: s3Response.Location, // working
         size: req.file.size,
@@ -80,6 +80,7 @@ router.post('/fileuploads', multerUpload.single('fileupload[file]'), (req, res) 
     })
     // respond to succesful `create` with status 201 and JSON of new "fileupload"
     .then(fileupload => {
+      console.log({ fileupload: fileupload.toObject() })
       res.status(201).json({ fileupload: fileupload.toObject() })
     })
     // if an error occurs, pass it off to our error handler
