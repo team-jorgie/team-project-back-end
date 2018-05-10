@@ -9,6 +9,7 @@ const FileUpload = require('../models/fileupload')
 // we'll use this to intercept any errors that get thrown and send them
 // back to the client with the appropriate status code
 const handle = require('../../lib/error_handler')
+const s3upload = require('../../lib/s3upload')
 
 // this is a collection of methods that help us detect situations when we need
 // to throw a custom error
@@ -56,13 +57,27 @@ router.get('/fileuploads/:id', requireToken, (req, res) => {
     .catch(err => handle(err, res))
 })
 
+const multer = require('multer')
+const multerUpload = multer({ dest: '/tmp/' })
+
 // CREATE
 // POST /fileuploads
-router.post('/fileuploads', requireToken, (req, res) => {
+router.post('/fileuploads', multerUpload.single('fileupload[file]'), (req, res) => {
   // set owner of new fileupload to be current user
-  req.body.fileupload.owner = req.user.id
-  console.log(req.body)
-  FileUpload.create(req.body.fileupload)
+  // req.body.fileupload.owner = req.user.id
+  console.log('req.body is: ', req.body)
+  console.log('req.file is: ', req.file)
+  // FileUpload.create(req.body.fileupload)
+  s3upload(req.file)
+    .then((s3Response) => {
+      return FileUpload.create({
+        owner: '5af45560a3fcd30e62ea0ca0', // user ID
+        title: req.body.fileupload.title, // From input
+        url: s3Response.Location, // working
+        size: req.file.size,
+        tag: req.body.fileupload.tags.split(', ')
+      })
+    })
     // respond to succesful `create` with status 201 and JSON of new "fileupload"
     .then(fileupload => {
       res.status(201).json({ fileupload: fileupload.toObject() })
