@@ -10,6 +10,12 @@ const FileUpload = require('../models/fileupload')
 // back to the client with the appropriate status code
 const handle = require('../../lib/error_handler')
 const s3upload = require('../../lib/s3upload')
+const s3Delete = require('../../lib/s3delet')
+
+const AWS = require('aws-sdk')
+const s3 = new AWS.S3()
+
+// require('dotenv').config()
 
 // this is a collection of methods that help us detect situations when we need
 // to throw a custom error
@@ -71,7 +77,7 @@ router.post('/fileuploads', requireToken, multerUpload.single('fileupload[file]'
   s3upload(req.file)
     .then((s3Response) => {
       return FileUpload.create({
-        owner: req.body.fileupload.owner,  //'5af45560a3fcd30e62ea0ca0', // user ID
+        owner: req.body.fileupload.owner, // '5af45560a3fcd30e62ea0ca0', // user ID
         title: req.body.fileupload.title, // From input
         url: s3Response.Location, // working
         size: req.file.size,
@@ -127,13 +133,25 @@ router.delete('/fileuploads/:id', requireToken, (req, res) => {
   FileUpload.findById(req.params.id)
     .then(handle404)
     .then(fileupload => {
+      console.log(fileupload.url)
+      const fileKey = fileupload.url.replace('https://file-bucket-team.s3.amazonaws.com/', '')
+      console.log(fileKey)
+      const params = {
+        Bucket: 'file-bucket-team',
+        Key: fileKey
+      }
+      s3.deleteObject(params, function (err, data) {
+        if (err) console.log(err, err.stack)
+        else console.log(data)
+      })
       // throw an error if current user doesn't own `fileupload`
       requireOwnership(req, fileupload)
       // delete the fileupload ONLY IF the above didn't throw
       fileupload.remove()
+      return fileKey
     })
     // send back 204 and no content if the deletion succeeded
-    .then(() => res.sendStatus(204))
+    .then((fileKey) => res.status(204).send(fileKey))
     // if an error occurs, pass it to the handler
     .catch(err => handle(err, res))
 })
