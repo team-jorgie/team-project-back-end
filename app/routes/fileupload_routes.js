@@ -76,13 +76,22 @@ router.post('/fileuploads', requireToken, multerUpload.single('fileupload[file]'
   // FileUpload.create(req.body.fileupload)
   s3upload(req.file)
     .then((s3Response) => {
-      return FileUpload.create({
-        owner: req.body.fileupload.owner, // '5af45560a3fcd30e62ea0ca0', // user ID
-        title: req.body.fileupload.title, // From input
-        url: s3Response.Location, // working
-        size: req.file.size,
-        tag: req.body.fileupload.tags.split(', ')
-      })
+      if (req.body.fileupload.tags === '') {
+        return FileUpload.create({
+          owner: req.body.fileupload.owner, // '5af45560a3fcd30e62ea0ca0', // user ID
+          title: req.body.fileupload.title, // From input
+          url: s3Response.Location, // working
+          size: req.file.size
+        })
+      } else {
+        return FileUpload.create({
+          owner: req.body.fileupload.owner, // '5af45560a3fcd30e62ea0ca0', // user ID
+          title: req.body.fileupload.title, // From input
+          url: s3Response.Location, // working
+          size: req.file.size,
+          tag: req.body.fileupload.tags.split(', ')
+        })
+      }
     })
     // respond to succesful `create` with status 201 and JSON of new "fileupload"
     .then(fileupload => {
