@@ -10,7 +10,7 @@ const FileUpload = require('../models/fileupload')
 // back to the client with the appropriate status code
 const handle = require('../../lib/error_handler')
 const s3upload = require('../../lib/s3upload')
-const s3Delete = require('../../lib/s3delet')
+// const s3Delete = require('../../lib/s3delet')
 
 const AWS = require('aws-sdk')
 const s3 = new AWS.S3()
@@ -74,6 +74,10 @@ router.post('/fileuploads', requireToken, multerUpload.single('fileupload[file]'
   console.log('req.body is: ', req.body)
   console.log('req.file is: ', req.file)
   // FileUpload.create(req.body.fileupload)
+  let publicBool = false
+  if (req.body.fileupload.publicFile === 'true') {
+    publicBool = true
+  }
   s3upload(req.file)
     .then((s3Response) => {
       if (req.body.fileupload.tags === '') {
@@ -81,7 +85,8 @@ router.post('/fileuploads', requireToken, multerUpload.single('fileupload[file]'
           owner: req.body.fileupload.owner, // '5af45560a3fcd30e62ea0ca0', // user ID
           title: req.body.fileupload.title, // From input
           url: s3Response.Location, // working
-          size: req.file.size
+          size: req.file.size,
+          publicFile: publicBool// req.body.fileupload.publicFile
         })
       } else {
         return FileUpload.create({
@@ -89,7 +94,8 @@ router.post('/fileuploads', requireToken, multerUpload.single('fileupload[file]'
           title: req.body.fileupload.title, // From input
           url: s3Response.Location, // working
           size: req.file.size,
-          tag: req.body.fileupload.tags.split(', ')
+          tag: req.body.fileupload.tags.split(', '),
+          publicFile: publicBool// req.body.fileupload.publicFile
         })
       }
     })

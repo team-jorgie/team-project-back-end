@@ -18,7 +18,11 @@ const fileUploadSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  tag: [{ type: String }]
+  tag: [{ type: String }],
+  publicFile: {
+    type: Boolean,
+    required: true
+  }
 }, {
   timestamps: true
 })
